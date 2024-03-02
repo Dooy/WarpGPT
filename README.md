@@ -166,6 +166,7 @@ cd WarpGPT
 ```shell
 docker build -t warpgpt .
 docker run -d -p 5000:5000 warpgpt
+
 ```
 ## 开发环境
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=master&repo=Dooy/WarpGPT)
