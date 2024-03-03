@@ -3,15 +3,16 @@ package funcaptcha
 import (
 	"WarpGPT/pkg/env"
 	"encoding/json"
-	http "github.com/bogdanfinn/fhttp"
-	tls_client "github.com/bogdanfinn/tls-client"
-	"github.com/bogdanfinn/tls-client/profiles"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
+
+	http "github.com/bogdanfinn/fhttp"
+	tls_client "github.com/bogdanfinn/tls-client"
+	"github.com/bogdanfinn/tls-client/profiles"
 )
 
 type arkVer int
@@ -84,12 +85,14 @@ func WithHarData(harData HARData) solverArg {
 	return func(s *Solver) {
 		for _, v := range harData.Log.Entries {
 			if strings.HasPrefix(v.Request.URL, arkPreURL) || strings.HasPrefix(v.Request.URL, arkAuthPreURL) {
+				//fmt.Printf("www %+v\n", v)
 				var tmpArk arkReq
 				tmpArk.arkURL = v.Request.URL
 				if v.StartedDateTime == "" {
 					println("Error: no arkose request!")
 					continue
 				}
+				//println("ddd:", v.StartedDateTime, v.Request.URL)
 				t, _ := time.Parse(time.RFC3339, v.StartedDateTime)
 				bw := getBw(t.Unix())
 				fallbackBw := getBw(t.Unix() - 21600)
@@ -112,14 +115,19 @@ func WithHarData(harData HARData) solverArg {
 				var arkType string
 				tmpArk.arkBody = make(url.Values)
 				for _, p := range v.Request.PostData.Params {
+
+					//主要是获取到这个bda
 					if p.Name == "bda" {
 						cipher, err := url.QueryUnescape(p.Value)
 						if err != nil {
 							panic(err)
 						}
+						//主要bda
 						tmpArk.arkBx = Decrypt(cipher, tmpArk.userAgent+bw, tmpArk.userAgent+fallbackBw)
 					} else if p.Name != "rnd" {
+
 						query, err := url.QueryUnescape(p.Value)
+						//println("bda:", p.Name, ":", query)
 						if err != nil {
 							panic(err)
 						}
@@ -171,16 +179,19 @@ func WithHarpool(s *Solver) {
 		println("Error: please put HAR files in harPool directory!")
 	}
 	for _, path := range harPath {
+
 		file, err := os.ReadFile(path)
 		if err != nil {
 			return
 		}
+		//println("path:", file)
 		var harFile HARData
 		err = json.Unmarshal(file, &harFile)
 		if err != nil {
 			println("Error: not a HAR file!")
 			return
 		}
+		//println("harFile:", len(harFile.Log.Entries), harFile.Log.Entries[0].Request.URL)
 		WithHarData(harFile)(s)
 	}
 

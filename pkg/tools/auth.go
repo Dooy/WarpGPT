@@ -6,14 +6,15 @@ import (
 	"WarpGPT/pkg/logger"
 	"encoding/json"
 	"fmt"
-	http "github.com/bogdanfinn/fhttp"
-	tls_client "github.com/bogdanfinn/tls-client"
-	"github.com/bogdanfinn/tls-client/profiles"
 	"io"
 	"net/url"
 	"os"
 	"regexp"
 	"strings"
+
+	http "github.com/bogdanfinn/fhttp"
+	tls_client "github.com/bogdanfinn/tls-client"
+	"github.com/bogdanfinn/tls-client/profiles"
 )
 
 type Error struct {
@@ -23,13 +24,20 @@ type Error struct {
 	Error      error
 }
 
+func (e *Error) String() string {
+	return fmt.Sprintf("Error: %s\nLocation: %s\nStatusCode: %d\nDetails: %s\nError: %s",
+		e.Error.Error(), e.Location, e.StatusCode, e.Details, e.Error)
+}
 func NewError(location string, statusCode int, details string, err error) *Error {
-	return &Error{
+
+	e := &Error{
 		Location:   location,
 		StatusCode: statusCode,
 		Details:    details,
 		Error:      err,
 	}
+	logger.Log.Error(e.String())
+	return e
 }
 
 type Authenticator struct {
@@ -319,12 +327,19 @@ func (auth *Authenticator) partFour(state string) *Error {
 		redirectURL := resp.Header.Get("Location")
 		println(redirectURL)
 		return auth.partFive(state, redirectURL)
+	} else if resp.StatusCode == 303 {
+		return NewError("part_four", resp.StatusCode, "arkoseToken 过期", fmt.Errorf("error: Check details"))
+
 	} else {
-		var body interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-			return NewError("part_four", 0, "", err)
+		//var body interface{}
+		body, err := io.ReadAll(resp.Body)
+		// if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		// 	return NewError("part_four", 0, body.(string), err)
+		// }
+		if err != nil {
+			return NewError("part_four", 0, "error", err)
 		}
-		return NewError("part_four", resp.StatusCode, body.(string), fmt.Errorf("error: Check details"))
+		return NewError("part_four", resp.StatusCode, string(body), fmt.Errorf("error: Check details"))
 
 	}
 
