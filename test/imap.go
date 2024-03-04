@@ -89,7 +89,7 @@ func (m *ImapMail) GetNewMail() (string, error) {
 			break
 		}
 
-		log.Println("Got message:", msg.Envelope.Subject)
+		log.Println("Got message:", msg.Envelope.From, msg.Envelope.Subject)
 		log.Println("Date:", msg.Envelope.Date.Format(time.RFC3339))
 	}
 	return " oooe", nil
