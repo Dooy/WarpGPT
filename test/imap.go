@@ -2,6 +2,7 @@ package test
 
 import (
 	"log"
+	"time"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -70,7 +71,7 @@ func (m *ImapMail) GetNewMail() (string, error) {
 	// log.Println("Date:", msg.Envelope.Date.Format(time.RFC3339))
 	// return msg.Envelope.Subject, nil
 	// Get the last 10 messages
-	lastNum := uint32(10)
+	lastNum := uint32(1)
 
 	seqset := new(imap.SeqSet)
 	seqset.AddRange(mbox.Messages-lastNum+1, mbox.Messages)
@@ -78,7 +79,8 @@ func (m *ImapMail) GetNewMail() (string, error) {
 	messages := make(chan *imap.Message, lastNum)
 	done := make(chan error, 1)
 	go func() {
-		done <- c.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope}, messages)
+		//done <- c.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope}, messages)
+		done <- c.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope, imap.FetchBody}, messages)
 	}()
 
 	for i := 0; i < int(lastNum); i++ {
@@ -88,8 +90,10 @@ func (m *ImapMail) GetNewMail() (string, error) {
 			break
 		}
 
-		log.Println("Got message:", msg.Envelope.To[0].Address(), msg.Envelope.Subject)
-		//log.Println("Date:", msg.Envelope.Date.Format(time.RFC3339))
+		//log.Println("Got message:", msg.Envelope.To[0].Address(), msg.Envelope.Subject)
+		log.Println("Got message:", msg.Envelope.Subject)
+		log.Println("Date:", msg.Envelope.Date.Format(time.RFC3339))
+		log.Println("Body:", msg.Body)
 	}
 	return " oooe", nil
 }

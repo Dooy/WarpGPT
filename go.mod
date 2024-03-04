@@ -16,7 +16,10 @@ require (
 	golang.org/x/net v0.21.0
 )
 
-require github.com/emersion/go-sasl v0.0.0-20200509203442-7bfe0ed36a21 // indirect
+require (
+	github.com/emersion/go-sasl v0.0.0-20200509203442-7bfe0ed36a21 // indirect
+	github.com/emersion/go-textwrapper v0.0.0-20200911093747-65d896831594 // indirect
+)
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.1 // indirect
@@ -31,6 +34,7 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/emersion/go-imap v1.2.1
+	github.com/emersion/go-message v0.18.0
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
