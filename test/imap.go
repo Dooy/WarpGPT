@@ -95,8 +95,8 @@ func (m *ImapMail) GetNewMail() (string, error) {
 			break
 		}
 
-		//log.Println("Got message:", msg.Envelope.To[0].Address(), msg.Envelope.Subject)
-		log.Println("Got message:", msg.Envelope.Subject)
+		log.Println("Got message:", msg.Envelope.To[0].Address(), msg.Envelope.Subject)
+		//log.Println("Got message:", msg.Envelope.Subject)
 		log.Println("Date:", msg.Envelope.Date.Format(time.RFC3339))
 		//reader := msg.GetBody(section)
 		//log.Println("Body:",  )
