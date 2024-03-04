@@ -1,11 +1,14 @@
 package test
 
 import (
+	"io"
+	"io/ioutil"
 	"log"
 	"time"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
+	"github.com/emersion/go-message/mail"
 )
 
 type ImapMail struct {
@@ -78,9 +81,11 @@ func (m *ImapMail) GetNewMail() (string, error) {
 
 	messages := make(chan *imap.Message, lastNum)
 	done := make(chan error, 1)
+	section := &imap.BodySectionName{}
+	//items := []imap.FetchItem{section.FetchItem()}
 	go func() {
 		//done <- c.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope}, messages)
-		done <- c.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope, imap.FetchBody}, messages)
+		done <- c.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope, section.FetchItem()}, messages)
 	}()
 
 	for i := 0; i < int(lastNum); i++ {
@@ -93,7 +98,38 @@ func (m *ImapMail) GetNewMail() (string, error) {
 		//log.Println("Got message:", msg.Envelope.To[0].Address(), msg.Envelope.Subject)
 		log.Println("Got message:", msg.Envelope.Subject)
 		log.Println("Date:", msg.Envelope.Date.Format(time.RFC3339))
-		log.Println("Body:", msg.Body)
+		//reader := msg.GetBody(section)
+		//log.Println("Body:",  )
+		reader := msg.GetBody(section)
+		if reader == nil {
+			log.Fatal("未能获取邮件正文")
+			return "", nil
+		}
+		mr, err := mail.CreateReader(reader)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for {
+			p, err := mr.NextPart()
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				log.Fatal(err)
+			}
+
+			switch h := p.Header.(type) {
+			case *mail.InlineHeader:
+				b, _ := ioutil.ReadAll(p.Body)
+				log.Printf("Got text: %v\n", string(b))
+			case *mail.AttachmentHeader:
+				filename, _ := h.Filename()
+				log.Printf("Got attachment: %v\n", filename)
+			}
+		}
 	}
 	return " oooe", nil
+}
+
+func readMail(mr *imap.Reader) {
+
 }
