@@ -39,7 +39,7 @@ func (m *ImapMail) Login() error {
 	m.Client = c
 	return nil
 }
-func (m *ImapMail) GetNewMail(toMail string) (string, error) {
+func (m *ImapMail) GetNewMail(toMail string, lastNum uint32) (string, error) {
 	c := m.Client
 	// Select INBOX
 	mbox, err := c.Select("INBOX", false)
@@ -54,7 +54,7 @@ func (m *ImapMail) GetNewMail(toMail string) (string, error) {
 		return "", errors.New("No messages in mailbox")
 	}
 
-	lastNum := uint32(10)
+	//lastNum := uint32(10)
 
 	seqset := new(imap.SeqSet)
 	seqset.AddRange(mbox.Messages-lastNum+1, mbox.Messages)
@@ -102,7 +102,7 @@ func (m *ImapMail) GetNewMail(toMail string) (string, error) {
 			switch h := p.Header.(type) {
 			case *mail.InlineHeader:
 				b, _ := io.ReadAll(p.Body)
-				log.Printf("Got text: %v\n", string(b))
+				//log.Printf("Got text: %v\n", string(b))
 				return string(b), nil
 			case *mail.AttachmentHeader:
 				filename, _ := h.Filename()
