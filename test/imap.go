@@ -1,8 +1,8 @@
 package test
 
 import (
+	"errors"
 	"io"
-	"io/ioutil"
 	"log"
 	"time"
 
@@ -52,28 +52,9 @@ func (m *ImapMail) GetNewMail() (string, error) {
 	// Get the last message
 	if mbox.Messages == 0 {
 		log.Println("No messages in mailbox")
-		return "", nil
+		return "", errors.New("No messages in mailbox")
 	}
 
-	// seqset := new(imap.SeqSet)
-	// seqset.AddRange(mbox.Messages, mbox.Messages)
-
-	// messages := make(chan *imap.Message, 1)
-	// done := make(chan error, 1)
-	// go func() {
-	// 	done <- c.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope}, messages)
-	// }()
-
-	// msg := <-messages
-	// if msg == nil {
-	// 	log.Println("Server didn't return message")
-	// 	return "", nil
-	// }
-
-	// log.Println("Got message:", msg.Envelope.Subject)
-	// log.Println("Date:", msg.Envelope.Date.Format(time.RFC3339))
-	// return msg.Envelope.Subject, nil
-	// Get the last 10 messages
 	lastNum := uint32(1)
 
 	seqset := new(imap.SeqSet)
@@ -96,10 +77,9 @@ func (m *ImapMail) GetNewMail() (string, error) {
 		}
 
 		log.Println("Got message:", msg.Envelope.To[0].Address(), msg.Envelope.Subject)
-		//log.Println("Got message:", msg.Envelope.Subject)
+
 		log.Println("Date:", msg.Envelope.Date.Format(time.RFC3339))
-		//reader := msg.GetBody(section)
-		//log.Println("Body:",  )
+
 		reader := msg.GetBody(section)
 		if reader == nil {
 			log.Fatal("未能获取邮件正文")
@@ -119,7 +99,7 @@ func (m *ImapMail) GetNewMail() (string, error) {
 
 			switch h := p.Header.(type) {
 			case *mail.InlineHeader:
-				b, _ := ioutil.ReadAll(p.Body)
+				b, _ := io.ReadAll(p.Body)
 				log.Printf("Got text: %v\n", string(b))
 			case *mail.AttachmentHeader:
 				filename, _ := h.Filename()
@@ -127,7 +107,7 @@ func (m *ImapMail) GetNewMail() (string, error) {
 			}
 		}
 	}
-	return " oooe", nil
+	return "", nil
 }
 
 func readMail(mr *imap.Reader) {
