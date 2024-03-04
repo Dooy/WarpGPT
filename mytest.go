@@ -1,6 +1,6 @@
 package main
 
-import "WarpGPT/pkg/tools"
+import "WarpGPT/test"
 
 func main() {
 	// fmt.Println("Hello, World!")
@@ -18,6 +18,13 @@ func main() {
 	//reg := test.NewRegClient("https://myip.ipip.net", "adsd")
 	// reg := test.NewRegClient("https://mandrillapp.com/track/click/31165340/auth0.openai.com?p=eyJzIjoicktfQUxkRXFMWmVOQ245UHdYVGtUN0cyR1k0IiwidiI6MSwicCI6IntcInVcIjozMTE2NTM0MCxcInZcIjoxLFwidXJsXCI6XCJodHRwczpcXFwvXFxcL2F1dGgwLm9wZW5haS5jb21cXFwvdVxcXC9lbWFpbC12ZXJpZmljYXRpb24_dGlja2V0PUREeDE3OEJ0OG1qSlVRY0thRlloSHJGeERGSzRicGhXI1wiLFwiaWRcIjpcIjc4NGMwMzE0Zjc5MjQxNTJhODg5ODJlOTEzZGFmYjEzXCIsXCJ1cmxfaWRzXCI6W1wiMWM3OTUyMjNiMmQ0YmUwMjBmZDJhNTBmMmM5YzQxZjEwMThlNDU0Y1wiXX0ifQ", "adsd")
 	// reg.Start()
-	auth := tools.NewAuthenticator("mygod@addmao.com", "4MjcTD.EtQ8.@sy", "")
-	auth.Begin()
+
+	// auth := tools.NewAuthenticator("mygod@addmao.com", "4MjcTD.EtQ8.@sy", "")
+	// auth.Begin()
+	mail := test.NewImapMail("hts999@gmail.com", "adjgnsmwkegbukty")
+	err := mail.Login()
+	if err != nil {
+		println("login Fail :", err)
+	}
+	mail.GetNewMail()
 }

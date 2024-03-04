@@ -328,8 +328,8 @@ func (auth *Authenticator) partFour(state string) *Error {
 		println(redirectURL)
 		return auth.partFive(state, redirectURL)
 	} else if resp.StatusCode == 303 {
-		fmt.Printf("aa:%#v", resp.Header)
-		return NewError("part_four", resp.StatusCode, "arkoseToken 过期", fmt.Errorf("error: Check details"))
+		//fmt.Printf("aa:%#v", resp.Header)
+		return NewError("part_four", resp.StatusCode, "arkoseToken 过期或者跳验证码了", fmt.Errorf("error: Check details"))
 
 	} else {
 		//var body interface{}
