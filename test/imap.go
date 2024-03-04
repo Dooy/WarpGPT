@@ -52,22 +52,45 @@ func (m *ImapMail) GetNewMail() (string, error) {
 		return "", nil
 	}
 
-	seqset := new(imap.SeqSet)
-	seqset.AddRange(mbox.Messages, mbox.Messages)
+	// seqset := new(imap.SeqSet)
+	// seqset.AddRange(mbox.Messages, mbox.Messages)
 
-	messages := make(chan *imap.Message, 1)
+	// messages := make(chan *imap.Message, 1)
+	// done := make(chan error, 1)
+	// go func() {
+	// 	done <- c.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope}, messages)
+	// }()
+
+	// msg := <-messages
+	// if msg == nil {
+	// 	log.Println("Server didn't return message")
+	// 	return "", nil
+	// }
+
+	// log.Println("Got message:", msg.Envelope.Subject)
+	// log.Println("Date:", msg.Envelope.Date.Format(time.RFC3339))
+	// return msg.Envelope.Subject, nil
+	// Get the last 10 messages
+	lastNum := uint32(10)
+
+	seqset := new(imap.SeqSet)
+	seqset.AddRange(mbox.Messages-lastNum+1, mbox.Messages)
+
+	messages := make(chan *imap.Message, lastNum)
 	done := make(chan error, 1)
 	go func() {
 		done <- c.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope}, messages)
 	}()
 
-	msg := <-messages
-	if msg == nil {
-		log.Println("Server didn't return message")
-		return "", nil
-	}
+	for i := 0; i < int(lastNum); i++ {
+		msg := <-messages
+		if msg == nil {
+			log.Println("Server didn't return message")
+			break
+		}
 
-	log.Println("Got message:", msg.Envelope.Subject)
-	log.Println("Date:", msg.Envelope.Date.Format(time.RFC3339))
-	return msg.Envelope.Subject, nil
+		log.Println("Got message:", msg.Envelope.Subject)
+		log.Println("Date:", msg.Envelope.Date.Format(time.RFC3339))
+	}
+	return " oooe", nil
 }
