@@ -26,5 +26,5 @@ func main() {
 	if err != nil {
 		println("login Fail :", err)
 	}
-	mail.GetNewMail()
+	mail.GetNewMail("hts999@gmail.com")
 }

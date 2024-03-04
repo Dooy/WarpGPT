@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io"
 	"log"
-	"time"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -40,7 +39,7 @@ func (m *ImapMail) Login() error {
 	m.Client = c
 	return nil
 }
-func (m *ImapMail) GetNewMail() (string, error) {
+func (m *ImapMail) GetNewMail(toMail string) (string, error) {
 	c := m.Client
 	// Select INBOX
 	mbox, err := c.Select("INBOX", false)
@@ -55,7 +54,7 @@ func (m *ImapMail) GetNewMail() (string, error) {
 		return "", errors.New("No messages in mailbox")
 	}
 
-	lastNum := uint32(1)
+	lastNum := uint32(10)
 
 	seqset := new(imap.SeqSet)
 	seqset.AddRange(mbox.Messages-lastNum+1, mbox.Messages)
@@ -72,42 +71,46 @@ func (m *ImapMail) GetNewMail() (string, error) {
 	for i := 0; i < int(lastNum); i++ {
 		msg := <-messages
 		if msg == nil {
-			log.Println("Server didn't return message")
+			return "", errors.New("Server didn't return message")
 			break
 		}
 
-		log.Println("Got message:", msg.Envelope.To[0].Address(), msg.Envelope.Subject)
+		//log.Println("Got message:", msg.Envelope.To[0].Address(), msg.Envelope.Subject)
+		if msg.Envelope.To[0].Address() != toMail {
+			continue
+		}
 
-		log.Println("Date:", msg.Envelope.Date.Format(time.RFC3339))
+		//log.Println("Date:", msg.Envelope.Date.Format(time.RFC3339))
 
 		reader := msg.GetBody(section)
 		if reader == nil {
-			log.Fatal("未能获取邮件正文")
-			return "", nil
+			return "", errors.New("未能获取邮件正文")
 		}
 		mr, err := mail.CreateReader(reader)
 		if err != nil {
-			log.Fatal(err)
+			return "", err
 		}
 		for {
 			p, err := mr.NextPart()
 			if err == io.EOF {
 				break
 			} else if err != nil {
-				log.Fatal(err)
+				//log.Fatal(err)
+				break
 			}
 
 			switch h := p.Header.(type) {
 			case *mail.InlineHeader:
 				b, _ := io.ReadAll(p.Body)
 				log.Printf("Got text: %v\n", string(b))
+				return string(b), nil
 			case *mail.AttachmentHeader:
 				filename, _ := h.Filename()
 				log.Printf("Got attachment: %v\n", filename)
 			}
 		}
 	}
-	return "", nil
+	return "", errors.New("内容")
 }
 
 func readMail(mr *imap.Reader) {
