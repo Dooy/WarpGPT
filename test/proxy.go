@@ -1,110 +1,193 @@
 package test
 
 import (
+	"encoding/binary"
+	"errors"
 	"fmt"
+	"io"
+	"log"
 	"net"
 )
 
-func handleSocks5(conn net.Conn) {
-	defer conn.Close()
-	fmt.Println("Socks5 word")
-	// 实现 SOCKS5 协议处理逻辑
-	// 这里只是简单示例，实际应该根据协议规范来处理请求
+type Socket struct {
+	Addr, User, Passwd string
 }
 
-func handleHTTP(conn net.Conn) {
-	defer conn.Close()
-	fmt.Println("handleHTTP word")
-
-	// 实现 HTTP 代理处理逻辑
-	// 这里只是简单示例，实际应该解析 HTTP 请求，转发到目标服务器，并返回响应
-
-	// 读取客户端的请求
-	requestBuffer := make([]byte, 14096)
-	n, err := conn.Read(requestBuffer)
+func (s *Socket) Start() {
+	server, err := net.Listen("tcp", s.Addr)
 	if err != nil {
-		fmt.Println("Error reading HTTP request:", err)
+		fmt.Printf("Listen failed: %v\n", err)
 		return
 	}
-
-	// 解析HTTP请求
-	httpRequest := string(requestBuffer[:n])
-	fmt.Println("Received HTTP request:\n", httpRequest)
-
-	// // 这里可以添加逻辑，解析请求并决定要连接的目标服务器
-
-	// // 与目标服务器建立连接
-	// targetConn, err := net.Dial("tcp", "target-server.com:80")
-	// if err != nil {
-	// 	fmt.Println("Error connecting to target server:", err)
-	// 	return
-	// }
-	// defer targetConn.Close()
-
-	// // 转发HTTP请求到目标服务器
-	// _, err = targetConn.Write([]byte(httpRequest))
-	// if err != nil {
-	// 	fmt.Println("Error forwarding HTTP request:", err)
-	// 	return
-	// }
-
-	// // 从目标服务器读取响应并转发给客户端
-	// responseBuffer := make([]byte, 4096)
-	// n, err = targetConn.Read(responseBuffer)
-	// if err != nil {
-	// 	fmt.Println("Error reading response from target server:", err)
-	// 	return
-	// }
-
-	// // 将目标服务器的响应转发给客户端
-	// _, err = conn.Write(responseBuffer[:n])
-	// if err != nil {
-	// 	fmt.Println("Error forwarding response to client:", err)
-	// 	return
-	// }
-
-	fmt.Println("HTTP request handled successfully.")
-
-}
-
-func MyProxy() {
-	server := "0.0.0.0:6050"
-	// 启动监听在本地的端口
-	listener, err := net.Listen("tcp", server)
-	if err != nil {
-		fmt.Println("Error listening:", err)
-		return
-	}
-	defer listener.Close()
-	fmt.Println("Proxy server listening on ", server)
-
+	log.Println("服务启动成功：", server.Addr())
 	for {
-		// 接受客户端连接
-		conn, err := listener.Accept()
+		client, err := server.Accept()
 		if err != nil {
-			fmt.Println("Error accepting connection:", err)
+			fmt.Printf("Accept failed: %v", err)
 			continue
 		}
-
-		// 根据请求协议类型分发连接到不同的处理函数
-		go func(conn net.Conn) {
-			// 读取请求的头部信息，以确定连接类型
-			buffer := make([]byte, 256)
-			_, err := conn.Read(buffer)
-			if err != nil {
-				fmt.Println("Error reading request:", err)
-				conn.Close()
-				return
-			}
-
-			// 判断请求的类型
-			if buffer[0] == 0x05 {
-				// 如果是 SOCKS5 协议
-				handleSocks5(conn)
-			} else {
-				// 其他情况认为是 HTTP 请求
-				handleHTTP(conn)
-			}
-		}(conn)
+		go s.callback(client)
 	}
+}
+
+func (s *Socket) callback(conn net.Conn) {
+	if err := s.noAuth(conn); err != nil {
+		_ = conn.Close()
+		log.Printf("socket auth: err =%v", err)
+		return
+	}
+	target, err := s.connect(conn)
+	if err != nil {
+		target.Close()
+		log.Printf("socket connect: err =%v", err)
+		return
+	}
+	log.Println("conn：", conn.RemoteAddr().String(), "-->", target.RemoteAddr().String())
+	s.forward(conn, target)
+}
+func (s *Socket) noAuth(client net.Conn) (err error) {
+	buf := make([]byte, 256)
+	// 读取 VER 和 NMETHODS
+	n, err := io.ReadFull(client, buf[:2])
+	if n != 2 {
+		return errors.New("reading header: " + err.Error())
+	}
+	ver, nMethods := int(buf[0]), int(buf[1])
+	if ver != 5 {
+		return errors.New("invalid version")
+	}
+	// 读取 METHODS 列表
+	n, err = io.ReadFull(client, buf[:nMethods])
+	if n != nMethods {
+		return errors.New("reading methods: " + err.Error())
+	}
+	// 通知客户端无需认证
+	n, err = client.Write([]byte{0x05, 0x00})
+	if n != 2 || err != nil {
+		return errors.New("write rsp err: " + err.Error())
+	}
+	return nil
+
+}
+func (s *Socket) auth(client net.Conn) (err error) {
+	buf := make([]byte, 256)
+	// 读取 VER 和 NMETHODS
+	n, err := io.ReadFull(client, buf[:2])
+	if n != 2 {
+		return errors.New("reading header: " + err.Error())
+	}
+	ver, nMethods := int(buf[0]), int(buf[1])
+	if ver != 5 {
+		return errors.New("invalid version")
+	}
+	// 读取 METHODS 列表
+	n, err = io.ReadFull(client, buf[:nMethods])
+	if n != nMethods {
+		return errors.New("reading methods: " + err.Error())
+	}
+	//     无认证的socks5
+	if buf[0] == 0x00 {
+		n, err = client.Write([]byte{0x05, 0x00})
+		if n != 2 || err != nil {
+			return errors.New("write rsp err: " + err.Error())
+		}
+		// 允许无认证
+		//return nil
+		return errors.New("no auth")
+	}
+	// 带认证的socks5
+	if buf[0] == 0x02 {
+		n, err = client.Write([]byte{0x05, 0x02})
+		if n != 2 {
+			return errors.New("reading methods: " + err.Error())
+		}
+		// 检查请求头版本
+		n, err = io.ReadFull(client, buf[:1])
+		//认证子协商版本（与 SOCKS 协议版本的0x05无关系）
+		if buf[0] != 0x01 {
+			return errors.New("reading methods: " + err.Error())
+		}
+		//从请求中获取用户名
+		n, err = io.ReadFull(client, buf[:1])
+		userLen := buf[0]
+		n, err = io.ReadFull(client, buf[:userLen])
+		bufUsername := string(buf[:userLen])
+		n, err = io.ReadFull(client, buf[:1])
+		passwdLen := buf[0]
+		n, err = io.ReadFull(client, buf[:passwdLen])
+		bufPassword := string(buf[:passwdLen])
+		if bufUsername == s.User && bufPassword == s.Passwd {
+			//STATUS：认证结果（0x00 认证成功 / 大于0x00 认证失败）
+			n, err = client.Write([]byte{0x05, 0x00})
+			return nil
+		} else {
+			n, err = client.Write([]byte{0x05, 0x01})
+			return errors.New("auth error")
+		}
+	}
+	return nil
+
+}
+func (s *Socket) connect(conn net.Conn) (net.Conn, error) {
+	// 定义一个数组，用来xxx
+	buf := make([]byte, 256)
+	n, err := io.ReadFull(conn, buf[:4])
+	// 检查是否为ipv4协议
+	if n != 4 {
+		return nil, errors.New("read header: " + err.Error())
+	}
+	ver, cmd, _, atyp := buf[0], buf[1], buf[2], buf[3]
+	if ver != 5 || cmd != 1 {
+		return nil, errors.New("invalid ver/cmd")
+	}
+	addr := ""
+	switch atyp {
+	case 1:
+		n, err = io.ReadFull(conn, buf[:4])
+		if n != 4 {
+			return nil, errors.New("invalid IPv4: " + err.Error())
+		}
+		addr = fmt.Sprintf("%d.%d.%d.%d", buf[0], buf[1], buf[2], buf[3])
+	case 3:
+		n, err = io.ReadFull(conn, buf[:1])
+		if n != 1 {
+			return nil, errors.New("invalid hostname: " + err.Error())
+		}
+		addrLen := int(buf[0])
+		n, err = io.ReadFull(conn, buf[:addrLen])
+		if n != addrLen {
+			return nil, errors.New("invalid hostname: " + err.Error())
+		}
+		addr = string(buf[:addrLen])
+	case 4:
+		return nil, errors.New("IPv6: no supported yet")
+	default:
+		return nil, errors.New("invalid atyp")
+	}
+	n, err = io.ReadFull(conn, buf[:2])
+	if n != 2 {
+		return nil, errors.New("read port: " + err.Error())
+	}
+	port := binary.BigEndian.Uint16(buf[:2])
+	destAddrPort := fmt.Sprintf("%s:%d", addr, port)
+	dest, err := net.Dial("tcp", destAddrPort)
+	if err != nil {
+		return nil, errors.New("dial dst: " + err.Error())
+	}
+	n, err = conn.Write([]byte{0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0, 0})
+	if err != nil {
+		dest.Close()
+		return nil, errors.New("write rsp: " + err.Error())
+	}
+	return dest, nil
+}
+
+func (s *Socket) forward(conn, target net.Conn) {
+	forward := func(src, dest net.Conn) {
+		defer src.Close()
+		defer dest.Close()
+		io.Copy(src, dest)
+	}
+	go forward(conn, target)
+	go forward(target, conn)
 }

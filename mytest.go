@@ -22,7 +22,6 @@ func main() {
 	// auth := tools.NewAuthenticator("mygod@addmao.com", "4MjcTD.EtQ8.@sy", "")
 	// auth.Begin()
 
-
 	// mail := test.NewImapMail("hts999@gmail.com", "adjgnsmwkegbukty")
 	// err := mail.Login()
 	// if err != nil {
@@ -34,5 +33,9 @@ func main() {
 	// } else {
 	// 	println("login success :", msg)
 	// }
-	test.MyProxy()
+
+	//test.MyProxy()
+
+	s := test.Socket{Addr: "0.0.0.0:6050"}
+	s.Start()
 }
