@@ -21,15 +21,18 @@ func main() {
 
 	// auth := tools.NewAuthenticator("mygod@addmao.com", "4MjcTD.EtQ8.@sy", "")
 	// auth.Begin()
-	mail := test.NewImapMail("hts999@gmail.com", "adjgnsmwkegbukty")
-	err := mail.Login()
-	if err != nil {
-		println("login Fail :", err)
-	}
-	msg, err := mail.GetNewMail("b0228@addmao.com", 10)
-	if err != nil {
-		println("login Fail :", err)
-	} else {
-		println("login success :", msg)
-	}
+
+
+	// mail := test.NewImapMail("hts999@gmail.com", "adjgnsmwkegbukty")
+	// err := mail.Login()
+	// if err != nil {
+	// 	println("login Fail :", err)
+	// }
+	// msg, err := mail.GetNewMail("b0228@addmao.com", 10)
+	// if err != nil {
+	// 	println("login Fail :", err)
+	// } else {
+	// 	println("login success :", msg)
+	// }
+	test.MyProxy()
 }
