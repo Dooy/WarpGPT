@@ -14,7 +14,7 @@ func handleSocks5(conn net.Conn) {
 
 func handleHTTP(conn net.Conn) {
 	defer conn.Close()
-	fmt.Println("Socks5 hello word")
+	fmt.Println("handleHTTP hello word")
 	// 实现 HTTP 代理处理逻辑
 	// 这里只是简单示例，实际应该解析 HTTP 请求，转发到目标服务器，并返回响应
 }
