@@ -114,5 +114,11 @@ func (m *ImapMail) GetNewMail(toMail string, lastNum uint32) (string, error) {
 }
 
 func readMail(mr *imap.Reader) {
-
+	ifun := func(s string) bool {
+		return len(s) > 10
+	}
+	myfun(ifun)
+}
+func myfun(ifun func(s string) bool) bool {
+	return ifun("abddd")
 }
