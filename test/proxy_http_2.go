@@ -121,7 +121,7 @@ func handleClientRequest(client net.Conn) {
 	}
 	defer server.Close()
 	if method == "CONNECT" {
-		fmt.Fprint(client, "HTTP/1.1 200 Connection established\r\n\r\n")
+		//fmt.Fprint(client, "HTTP/1.1 200 Connection established\r\n\r\n")
 		go io.Copy(server, clientReader)
 	} else {
 		needDecodeHeader := false
