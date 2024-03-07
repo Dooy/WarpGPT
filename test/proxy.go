@@ -1,5 +1,8 @@
 package test
 
+//@see https://zhuanlan.zhihu.com/p/651840788
+//@see http://www.tuohang.net/article/282498.html
+
 import (
 	"encoding/binary"
 	"errors"
