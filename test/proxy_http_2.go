@@ -86,7 +86,8 @@ func handleConnection(conn net.Conn) {
 		fmt.Printf("Failed to read request: %s", err)
 		return
 	}
-	fmt.Printf("Proxying request to: %s", request.URL.String())
+	//fmt.Printf("Proxying request to: %s", request.URL.String())
+	log.Println(request.URL.String())
 	client, err := net.Dial("tcp", request.Host) // 建立连接
 	if err != nil {
 		fmt.Printf("Failed to dial server: %s", err)
