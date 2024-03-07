@@ -6,7 +6,9 @@ import (
 	"io"
 	"log"
 	"net"
-	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 )
 
 func handleRequest(conn net.Conn) {
@@ -78,46 +80,122 @@ func handleRequest(conn net.Conn) {
 	// io.Copy(targetConn, conn)
 }
 
-func handleConnection(conn net.Conn) {
-
-	defer conn.Close()
-	request, err := http.ReadRequest(bufio.NewReader(conn)) // 读取请求
-	if err != nil {
-		fmt.Printf("Failed to read request: %s", err)
+func handleClientRequest(client net.Conn) {
+	if client == nil {
 		return
 	}
-	//fmt.Printf("Proxying request to: %s", request.URL.String())
-	log.Println(request.URL.String())
-	client, err := net.Dial("tcp", request.Host) // 建立连接
-	if err != nil {
-		fmt.Printf("Failed to dial server: %s", err)
-		return
-
-	}
-
 	defer client.Close()
 
-	err = request.Write(client) // 替换Host头并发送请求
+	clientReader := bufio.NewReader(client)
+
+	method, requestAddress, protocol, headers, headerLines, err := decodeHeader(clientReader)
 	if err != nil {
-		fmt.Printf("Failed to write request: %s", err)
+		log.Println(err)
 		return
 	}
-
-	response, err := http.ReadResponse(bufio.NewReader(client), request) // 读取响应
-
-	if err != nil {
-		fmt.Printf("Failed to read response: %s", err)
-		return
-	}
-	defer response.Body.Close()
-	for k, v := range response.Header { // 将响应头写回客户端
-
-		for _, vv := range v {
-			conn.Write([]byte(k + ": " + vv + ""))
+	nFirstLine := method + " " + requestAddress + " " + protocol
+	var serverAddress, oldHost string
+	if method == "CONNECT" {
+		serverAddress = requestAddress
+	} else {
+		hostPortURL, err := url.Parse(requestAddress)
+		if err != nil {
+			log.Println("url解析错误: " + nFirstLine)
+			log.Println(err)
+			return
+		}
+		oldHost = hostPortURL.Host
+		if !strings.Contains(oldHost, ":") {
+			serverAddress = oldHost + ":80"
+		} else {
+			serverAddress = oldHost
 		}
 	}
-	conn.Write([]byte(""))       // 写入响应行与响应头的分隔符
-	io.Copy(conn, response.Body) // 将响应体写回客户端
+
+	log.Println(nFirstLine + " " + serverAddress + "\n")
+	server, err := net.Dial("tcp", serverAddress)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer server.Close()
+	if method == "CONNECT" {
+		fmt.Fprint(client, "HTTP/1.1 200 Connection established\r\n\r\n")
+		go io.Copy(server, clientReader)
+	} else {
+		needDecodeHeader := false
+		go func() {
+			for {
+				if needDecodeHeader {
+					method, requestAddress, protocol, headers, headerLines, err = decodeHeader(clientReader)
+					if err != nil {
+						log.Println(err)
+						return
+					}
+				} else {
+					needDecodeHeader = true
+				}
+				requestPath := append(strings.Split(requestAddress, oldHost), "/")[1]
+				server.Write([]byte(method + " " + requestPath + " " + protocol + "\r\n"))
+				for _, line := range headerLines {
+					server.Write([]byte(line))
+				}
+				server.Write([]byte("\r\n"))
+
+				length64, err := strconv.ParseInt(headers["content-length"], 10, 64)
+				if err == nil {
+					if length64 == -1 {
+						io.Copy(server, clientReader)
+						return
+					}
+					limitedReader := io.LimitReader(clientReader, length64)
+					io.Copy(server, limitedReader)
+					limitedReader = io.LimitReader(clientReader, 2)
+					io.Copy(server, limitedReader)
+				}
+			}
+		}()
+	}
+	io.Copy(client, server)
+}
+
+func decodeHeader(render *bufio.Reader) (string, string, string, map[string]string, []string, error) {
+	var method, requestAddress, protocol string
+	var headers = map[string]string{}
+	var headerLines = []string{}
+	lineData, err := render.ReadBytes('\n')
+	if err != nil {
+		return method, requestAddress, protocol, headers, headerLines, err
+	}
+
+	line := string(lineData)
+	fmt.Sscanf(line, "%s%s%s", &method, &requestAddress, &protocol)
+	if line != method+" "+requestAddress+" "+protocol+"\r\n" {
+		log.Println("解析错误: " + line)
+	}
+	for {
+		lineData, err := render.ReadBytes('\n')
+		if err != nil {
+			return method, requestAddress, protocol, headers, headerLines, err
+		}
+		if len(lineData) == 2 {
+			break
+		}
+		line := string(lineData)
+		index := strings.Index(line, ":")
+		keyLower := strings.ToLower(strings.Trim(line[:index], "\r\n "))
+		value := line[index+1:]
+		if strings.HasPrefix(keyLower, "proxy-") {
+			log.Println(line)
+		}
+		headers[keyLower] = strings.Trim(value, "\r\n ")
+		if keyLower == "proxy-connection" {
+			headerLines = append(headerLines, "Connection:"+value)
+		} else {
+			headerLines = append(headerLines, line)
+		}
+	}
+	return method, requestAddress, protocol, headers, headerLines, err
 }
 
 func StartHttpV2(server string) {
@@ -136,6 +214,7 @@ func StartHttpV2(server string) {
 			continue
 		}
 		//go handleRequest(conn)
-		go handleConnection(conn)
+		//go handleConnection(conn)
+		go handleClientRequest(conn)
 	}
 }
