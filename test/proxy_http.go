@@ -8,8 +8,7 @@ import (
 )
 
 func ProxyHandler(w http.ResponseWriter, r *http.Request) {
-	logger.Log.Debug("有请求过来了！")
-	fmt.Println("有请求过来了！!")
+	logger.Log.Debug("有请求过来了！: ", r.URL.String())
 	req, err := http.NewRequest(r.Method, r.URL.String(), r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -42,9 +41,11 @@ func copyHeader(dst, src http.Header) {
 
 func StartHttpProxy(server string) {
 	http.HandleFunc("/", ProxyHandler)
-	fmt.Println("代理服务器已经运行,监听端口:", server)
+
 	err := http.ListenAndServe(server, nil) //":8080"
 	if err != nil {
 		fmt.Println("代理服务器启动失败!")
+	} else {
+		fmt.Println("代理服务器已经运行,监听端口:", server)
 	}
 }
