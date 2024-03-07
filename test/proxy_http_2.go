@@ -29,6 +29,7 @@ func handleRequest(conn net.Conn) {
 
 	// 解析目标地址
 	targetURL, err := url.Parse(target)
+	log.Println("request:", method, " target=", target)
 	if err != nil {
 		log.Println("Error parsing target URL:", err)
 		return
