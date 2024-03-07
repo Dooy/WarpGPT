@@ -39,5 +39,5 @@ func main() {
 	// s := test.Socket{Addr: "0.0.0.0:6050"}
 	// s.Start()
 
-	test.StartHttpProxy(":6050")
+	test.StartHttpProxy("0.0.0.0:6050")
 }
