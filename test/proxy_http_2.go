@@ -113,8 +113,9 @@ func handleClientRequest(client net.Conn) {
 		}
 	}
 
-	log.Println(nFirstLine + " " + serverAddress + "\n")
+	log.Println(nFirstLine + " [" + serverAddress + "]\n")
 	server, err := net.Dial("tcp", serverAddress)
+	//tls_client.Di
 	if err != nil {
 		log.Println(err)
 		return
@@ -122,6 +123,7 @@ func handleClientRequest(client net.Conn) {
 	defer server.Close()
 	if method == "CONNECT" {
 		fmt.Fprint(client, "HTTP/1.1 200 Connection established\r\n\r\n")
+
 		go io.Copy(server, clientReader)
 	} else {
 		log.Printf("POST")
