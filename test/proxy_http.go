@@ -42,11 +42,9 @@ func copyHeader(dst, src http.Header) {
 
 func StartHttpProxy(server string) {
 	http.HandleFunc("/", ProxyHandler)
-
+	fmt.Println("代理服务器已经运行,监听端口:", server)
 	err := http.ListenAndServe(server, nil) //":8080"
 	if err != nil {
 		fmt.Println("代理服务器启动失败!")
-	} else {
-		fmt.Println("代理服务器已经运行,监听端口:", server)
 	}
 }
