@@ -124,6 +124,7 @@ func handleClientRequest(client net.Conn) {
 		fmt.Fprint(client, "HTTP/1.1 200 Connection established\r\n\r\n")
 		go io.Copy(server, clientReader)
 	} else {
+		log.Printf("POST")
 		needDecodeHeader := false
 		go func() {
 			for {
