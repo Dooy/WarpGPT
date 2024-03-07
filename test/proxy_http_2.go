@@ -93,7 +93,7 @@ func handleClientRequest(client net.Conn) {
 		log.Println(err)
 		return
 	}
-	log.Printf("method:%s", method)
+	log.Printf("method:%s headerLines:%s", method, headerLines)
 	nFirstLine := method + " " + requestAddress + " " + protocol
 	var serverAddress, oldHost string
 	if method == "CONNECT" {
