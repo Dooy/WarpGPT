@@ -2,6 +2,7 @@ package test
 
 import (
 	"bufio"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"log"
@@ -114,7 +115,9 @@ func handleClientRequest(client net.Conn) {
 	}
 
 	log.Println(nFirstLine + " [" + serverAddress + "]\n")
-	server, err := net.Dial("tcp", serverAddress)
+	//server, err := net.Dial("tcp", serverAddress)
+	conf := &tls.Config{}
+	server, err := tls.Dial("tcp", serverAddress, conf)
 	//tls_client.Di
 	if err != nil {
 		log.Println(err)
