@@ -13,7 +13,8 @@ func handleRequest(conn net.Conn) {
 	// // 复制请求头
 	for {
 		line, err := reader.ReadString('\n')
-		if err != nil || line == "\r\n" {
+		//if err != nil || line == "\r\n" {
+		if err != nil {
 			break
 		}
 		log.Println(line)
