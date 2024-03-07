@@ -9,6 +9,7 @@ import (
 
 func ProxyHandler(w http.ResponseWriter, r *http.Request) {
 	logger.Log.Debug("有请求过来了！")
+	fmt.Println("有请求过来了！!")
 	req, err := http.NewRequest(r.Method, r.URL.String(), r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
