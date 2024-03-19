@@ -104,6 +104,7 @@ func (p *SessionToken) decodeRequestBody(requestBody *map[string]interface{}) er
 	}
 	if arkoseTokenErr == nil {
 		logger.Log.Info("arkoseToken cookie:", arkoseToken)
+		(*requestBody)["arkose"] = arkoseToken
 	}
 	return nil
 }
