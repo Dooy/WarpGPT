@@ -74,7 +74,7 @@ func (p *SessionToken) ProcessMethod() {
 			return
 		}
 	} else {
-		auth = tools.NewAuthenticator("", "", "")
+		auth = tools.NewAuthenticator("", "", "", "")
 		err := auth.GetAccessTokenByRefreshToken(refreshCookie.(string))
 		if err != nil {
 			p.GetContext().GinContext.JSON(400, err)
