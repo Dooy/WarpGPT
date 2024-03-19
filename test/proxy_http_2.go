@@ -2,7 +2,6 @@ package test
 
 import (
 	"bufio"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"log"
@@ -115,10 +114,10 @@ func handleClientRequest(client net.Conn) {
 	}
 
 	log.Println(nFirstLine + " [" + serverAddress + "]\n")
-	//server, err := net.Dial("tcp", serverAddress)
-	conf := &tls.Config{}
-	server, err := tls.Dial("tcp", serverAddress, conf)
-	//tls_client.Di
+	//tls_client.NewHttpClient()
+
+	//这个链接需要有指纹
+	server, err := net.Dial("tcp", serverAddress)
 	if err != nil {
 		log.Println(err)
 		return
@@ -126,7 +125,7 @@ func handleClientRequest(client net.Conn) {
 	defer server.Close()
 	if method == "CONNECT" {
 		fmt.Fprint(client, "HTTP/1.1 200 Connection established\r\n\r\n")
-
+		//clientReader.
 		go io.Copy(server, clientReader)
 	} else {
 		log.Printf("POST")

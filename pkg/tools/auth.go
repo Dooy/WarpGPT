@@ -2,7 +2,6 @@ package tools
 
 import (
 	"WarpGPT/pkg/env"
-	"WarpGPT/pkg/funcaptcha"
 	"WarpGPT/pkg/logger"
 	"encoding/json"
 	"fmt"
@@ -43,6 +42,7 @@ func NewError(location string, statusCode int, details string, err error) *Error
 type Authenticator struct {
 	EmailAddress       string
 	Password           string
+	ArkoseToken        string
 	Proxy              string
 	Session            tls_client.HttpClient
 	UserAgent          string
@@ -66,10 +66,11 @@ type AuthResult struct {
 	Model       map[string]interface{} `json:"model"`
 }
 
-func NewAuthenticator(emailAddress, password string, puid string) *Authenticator {
+func NewAuthenticator(emailAddress, password string, arkose string, puid string) *Authenticator {
 	auth := &Authenticator{
 		EmailAddress: emailAddress,
 		Password:     password,
+		ArkoseToken:  arkose,
 		Proxy:        os.Getenv("proxy"),
 		PUID:         puid,
 		UserAgent:    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
@@ -308,13 +309,14 @@ func (auth *Authenticator) partFour(state string) *Error {
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
-	token, err := funcaptcha.GetOpenAIArkoseToken(0, auth.PUID)
-	if err != nil {
-		return NewError("part_four", 0, "get arkose_token failed", err)
-	}
+	// token, err := funcaptcha.GetOpenAIArkoseToken(0, auth.PUID)
+	// if err != nil {
+	// 	return NewError("part_four", 0, "get arkose_token failed", err)
+	// }
 	cookie := &http.Cookie{
-		Name:  "arkoseToken",
-		Value: token,
+		Name: "arkoseToken",
+		// Value: token,
+		Value: auth.ArkoseToken,
 		Path:  "/",
 	}
 	req.AddCookie(cookie)

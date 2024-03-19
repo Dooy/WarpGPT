@@ -5,11 +5,12 @@ import (
 	"WarpGPT/pkg/plugins"
 	"WarpGPT/pkg/tools"
 	"encoding/json"
+	"io"
+	shttp "net/http"
+
 	http "github.com/bogdanfinn/fhttp"
 	tls_client "github.com/bogdanfinn/tls-client"
 	"github.com/gin-gonic/gin"
-	"io"
-	shttp "net/http"
 )
 
 var context *plugins.Component
@@ -44,14 +45,15 @@ func (p *SessionToken) ProcessMethod() {
 	var auth *tools.Authenticator
 	username, usernameExists := requestBody["username"]
 	password, passwordExists := requestBody["password"]
+	arkose, arkoseExists := requestBody["arkose"]
 	puid, puidExists := requestBody["puid"]
 	refreshCookie, refreshCookieExists := requestBody["refreshCookie"]
 	if !refreshCookieExists {
-		if usernameExists && passwordExists {
+		if usernameExists && passwordExists && arkoseExists {
 			if puidExists {
-				auth = tools.NewAuthenticator(username.(string), password.(string), puid.(string))
+				auth = tools.NewAuthenticator(username.(string), password.(string), arkose.(string), puid.(string))
 			} else {
-				auth = tools.NewAuthenticator(username.(string), password.(string), "")
+				auth = tools.NewAuthenticator(username.(string), password.(string), arkose.(string), "")
 			}
 			if err := auth.Begin(); err != nil {
 				p.GetContext().GinContext.JSON(400, err)
