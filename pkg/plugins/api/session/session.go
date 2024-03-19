@@ -2,6 +2,7 @@ package session
 
 import (
 	"WarpGPT/pkg/common"
+	"WarpGPT/pkg/logger"
 	"WarpGPT/pkg/plugins"
 	"WarpGPT/pkg/tools"
 	"encoding/json"
@@ -70,7 +71,7 @@ func (p *SessionToken) ProcessMethod() {
 			result["models"] = model["models"]
 			p.GetContext().GinContext.JSON(200, result)
 		} else {
-			p.GetContext().GinContext.JSON(400, gin.H{"error": "Please provide a refreshCookie or username and password."})
+			p.GetContext().GinContext.JSON(400, gin.H{"error": "Please provide a refreshCookie or arkose username and password."})
 			return
 		}
 	} else {
@@ -94,11 +95,15 @@ func (p *SessionToken) ProcessMethod() {
 }
 func (p *SessionToken) decodeRequestBody(requestBody *map[string]interface{}) error {
 	conversation := p.GetContext()
+	arkoseToken, arkoseTokenErr := conversation.GinContext.Cookie("arkoseToken")
 	if conversation.RequestBody != shttp.NoBody {
 		if err := json.NewDecoder(conversation.RequestBody).Decode(requestBody); err != nil {
 			conversation.GinContext.JSON(400, gin.H{"error": "JSON invalid"})
 			return err
 		}
+	}
+	if arkoseTokenErr == nil {
+		logger.Log.Info("arkoseToken cookie:", arkoseToken)
 	}
 	return nil
 }
