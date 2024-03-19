@@ -1,1 +1,1 @@
-go build && ./WarpGPT
+git pull &&  go run main.go
