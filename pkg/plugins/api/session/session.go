@@ -70,7 +70,7 @@ func (p *SessionToken) ProcessMethod() {
 			result["refreshCookie"] = refreshToken
 			result["models"] = model["models"]
 			result["refresh_token"] = refreshToken
-			//result["access_token"] = accessToken
+			result["access_token"] = result["accessToken"]
 			p.GetContext().GinContext.JSON(200, result)
 		} else {
 			p.GetContext().GinContext.JSON(400, gin.H{"error": "Please provide a refreshCookie or arkose username and password."})
